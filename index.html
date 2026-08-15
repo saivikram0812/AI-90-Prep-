@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Co-op 90 · Sai Vikram</title>
+<meta name="description" content="A 90-day, one-topic-per-day AI curriculum with handwritten cheat notes, labs, video links, project bank and interview prep — built to land an AI/ML co-op.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <h1>AI <span>Co-op</span> 90</h1>
+      <p>one topic a day</p>
+    </div>
+
+    <nav class="nav">
+      <button data-v="dash"      onclick="location.hash='#/dash'"><span class="ic">◈</span>Dashboard</button>
+      <button data-v="plan"      onclick="location.hash='#/plan'"><span class="ic">☰</span>90-day plan<span class="badge">0/90</span></button>
+      <button data-v="notes"     onclick="location.hash='#/notes'"><span class="ic">✎</span>Cheat notes</button>
+      <button data-v="dsa"       onclick="location.hash='#/dsa'"><span class="ic">⌗</span>DSA · NC150<span class="badge">0/150</span></button>
+      <button data-v="projects"  onclick="location.hash='#/projects'"><span class="ic">▲</span>Projects<span class="badge">0/6</span></button>
+      <button data-v="interview" onclick="location.hash='#/interview'"><span class="ic">◎</span>Interview<span class="badge">0/0</span></button>
+      <button data-v="journey"   onclick="location.hash='#/journey'"><span class="ic">◷</span>Journey log</button>
+      <button data-v="settings"  onclick="location.hash='#/settings'"><span class="ic">⚙</span>Settings</button>
+    </nav>
+
+    <div class="side-foot" id="side-foot"></div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/data/curriculum-p1.js"></script>
+<script src="js/data/curriculum-p2.js"></script>
+<script src="js/data/curriculum-p3.js"></script>
+<script src="js/data/dsa.js"></script>
+<script src="js/data/projects.js"></script>
+<script src="js/data/interview.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
