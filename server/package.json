@@ -1,0 +1,27 @@
+{
+  "name": "ai-coop-90-sync",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tiny Hono + Postgres sync service for the AI Co-op 90 tracker",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "db:push": "drizzle-kit push",
+    "test": "tsx test/e2e.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "drizzle-orm": "^0.38.3",
+    "hono": "^4.6.14",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.5",
+    "@types/node": "^22.10.2",
+    "drizzle-kit": "^0.30.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

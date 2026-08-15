@@ -62,7 +62,9 @@ let S = load();
 
 function blank() {
   return { startDate: todayISO(), done: {}, notes: {}, conf: {},
-           projects: {}, iv: {}, dsa: {}, redo: {}, v: 1 };
+           projects: {}, iv: {}, dsa: {}, redo: {},
+           t: {},   // per-key mutation timestamps — see sync.js for why
+           v: 2 };
 }
 function load() {
   try {
@@ -191,7 +193,11 @@ function renderSide() {
         <b>${done} / 90</b>days complete<br>
         <b style="color:var(--acc)">${streak()} day</b>streak
       </div>
-    </div>`;
+    </div>
+    <button class="sync-pill" id="sync-pill"></button>`;
+  const pill = document.getElementById("sync-pill");
+  pill.addEventListener("click", () => SYNC.enabled ? syncNow() : go("#/settings"));
+  renderSyncPill();
   document.querySelector('[data-v="plan"] .badge').textContent = `${done}/90`;
   document.querySelector('[data-v="dsa"] .badge').textContent = `${dsaSolvedCount()}/${DSA.length}`;
   const ivTotal = INTERVIEW.reduce((a, c) => a + c.qs.length, 0);
@@ -798,10 +804,61 @@ function viewJourney() {
 function viewSettings() {
   return `
   <div class="page-head">
-    <h2>Settings &amp; backup</h2>
-    <p>Progress lives in this browser's local storage. <b>Export it regularly</b> — clearing site
-       data or switching browsers will lose it otherwise.</p>
+    <h2>Settings, sync &amp; backup</h2>
+    <p>Progress lives in this browser's local storage. Turn on sync to share it across devices —
+       otherwise export regularly, because clearing site data loses it.</p>
   </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:11px;margin-bottom:4px;flex-wrap:wrap">
+      <h4 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--txt-3)">
+        Device sync</h4>
+      <span class="sync-pill ${syncStatus().cls}" style="margin-left:auto">${esc(syncStatus().txt)}</span>
+    </div>
+    <p style="font-size:13px;color:var(--txt-3);margin-bottom:14px;max-width:70ch">
+      Two-way, merged per item — ticking a problem on your phone and a day on your laptop both
+      survive. Your sync key is the only credential; anyone holding it can read and write your
+      progress, so treat it like a password. The server never stores the key itself, only its hash.
+    </p>
+
+    <div class="set-row">
+      <div><div class="l">Sync server</div>
+        <div class="d">The base URL of your deployed sync service, e.g.
+          <code>https://ai-coop-90-sync.up.railway.app</code>. Leave blank to keep sync off.</div></div>
+      <input type="text" id="syncurl" placeholder="https://…" value="${esc(SYNC.url)}"
+        style="min-width:270px">
+    </div>
+
+    <div class="set-row">
+      <div><div class="l">Sync key</div>
+        <div class="d">${SYNC.key
+          ? "Paste this same key on your other devices to join them to this progress."
+          : "Generate one here, then paste it on your other devices."}</div></div>
+      <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="synckey" placeholder="paste a key, or generate one"
+          value="${esc(SYNC.key ? prettyKey(SYNC.key) : "")}"
+          spellcheck="false" style="min-width:250px;font-family:var(--mono);font-size:12.5px">
+        <button class="btn sm" id="genkey">Generate</button>
+        ${SYNC.key ? `<button class="btn sm" id="copykey">Copy</button>` : ""}
+      </div>
+    </div>
+
+    <div class="set-row">
+      <div><div class="l">${SYNC.enabled ? "Sync is on" : "Sync is off"}</div>
+        <div class="d">${SYNC.enabled
+          ? "Changes push automatically a couple of seconds after you make them, and pull whenever you return to the tab."
+          : "Set a server URL and a key, then turn it on."}</div></div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        ${SYNC.enabled ? `<button class="btn sm" id="syncnow">↻ Sync now</button>` : ""}
+        <button class="btn sm ${SYNC.enabled ? "" : "pri"}" id="synctoggle"
+          ${(!SYNC.url || !SYNC.key) && !SYNC.enabled ? "disabled" : ""}>
+          ${SYNC.enabled ? "Turn off" : "Turn on sync"}</button>
+      </div>
+    </div>
+    ${lastError ? `<div class="set-row" style="border:none"><div class="d" style="color:var(--red)">
+      Last error: ${esc(lastError)}</div></div>` : ""}
+  </div>
+
   <div class="card">
     <div class="set-row">
       <div><div class="l">Start date</div>
@@ -857,17 +914,17 @@ function wire(view) {
     b.addEventListener("click", e => {
       e.stopPropagation();
       const s = b.dataset.dtick;
-      if (S.dsa[s]) { delete S.dsa[s]; }
-      else { S.dsa[s] = new Date().toISOString(); delete S.redo[s]; }
-      save(); route();
+      if (S.dsa[s]) { mut("dsa", s, undefined); }
+      else { mut("dsa", s, new Date().toISOString()); mut("redo", s, undefined); }
+      route();
     }));
   document.querySelectorAll("[data-dredo]").forEach(b =>
     b.addEventListener("click", e => {
       e.stopPropagation();
       const s = b.dataset.dredo;
-      if (S.redo[s]) delete S.redo[s];
-      else { S.redo[s] = 1; toast("Flagged for week-13 revision"); }
-      save(); route();
+      if (S.redo[s]) mut("redo", s, undefined);
+      else { mut("redo", s, 1); toast("Flagged for week-13 revision"); }
+      route();
     }));
 
   if (view === "dsa") {
@@ -896,27 +953,26 @@ function wire(view) {
     ta.addEventListener("input", () => {
       clearTimeout(t);
       t = setTimeout(() => {
-        if (ta.value.trim()) S.notes[n] = ta.value; else delete S.notes[n];
-        save();
+        mut("notes", n, ta.value.trim() ? ta.value : undefined);
       }, 500);
     });
 
     document.getElementById("mark").addEventListener("click", () => {
       if (isDone(n)) {
-        delete S.done[n];
+        mut("done", n, undefined);
         toast(`Day ${n} un-marked`);
       } else {
-        S.done[n] = { at: new Date().toISOString() };
+        mut("done", n, { at: new Date().toISOString() });
         toast(`Day ${n} complete — ${doneCount()}/90`);
       }
-      save(); route();
+      route();
     });
 
     document.querySelectorAll("[data-conf]").forEach(b =>
       b.addEventListener("click", () => {
         const v = +b.dataset.conf;
-        if (S.conf[n] === v) delete S.conf[n]; else S.conf[n] = v;
-        save(); route();
+        mut("conf", n, S.conf[n] === v ? undefined : v);
+        route();
       }));
   }
 
@@ -945,9 +1001,9 @@ function wire(view) {
     document.querySelectorAll("[data-pj] button").forEach(b =>
       b.addEventListener("click", () => {
         const id = b.closest("[data-pj]").dataset.pj, s = b.dataset.s;
-        if (S.projects[id] === s) delete S.projects[id]; else S.projects[id] = s;
-        save(); route();
-        if (s === "shipped" && S.projects[id] === "shipped") toast("Shipped. Update your resume.");
+        mut("projects", id, S.projects[id] === s ? undefined : s);
+        route();
+        if (S.projects[id] === "shipped") toast("Shipped. Update your resume.");
       }));
   }
 
@@ -958,15 +1014,48 @@ function wire(view) {
       b.addEventListener("click", e => {
         e.stopPropagation();
         const id = b.dataset.tick;
-        if (S.iv[id]) delete S.iv[id]; else S.iv[id] = 1;
-        save(); route();
+        mut("iv", id, S.iv[id] ? undefined : 1);
+        route();
       }));
   }
 
   if (view === "settings") {
     document.getElementById("sdate").addEventListener("change", e => {
-      S.startDate = e.target.value || todayISO(); save(); toast("Start date updated"); route();
+      mutMeta("startDate", e.target.value || todayISO()); toast("Start date updated"); route();
     });
+
+    /* --- sync controls --- */
+    const urlEl = document.getElementById("syncurl");
+    const keyEl = document.getElementById("synckey");
+    urlEl.addEventListener("change", () => {
+      SYNC.url = urlEl.value.trim().replace(/\/+$/, ""); saveSync(); route();
+    });
+    keyEl.addEventListener("change", () => {
+      const k = normKey(keyEl.value);
+      if (k && k.length !== 26) { toast("A sync key is 26 characters"); return; }
+      if (k !== SYNC.key) { SYNC.key = k; SYNC.version = 0; SYNC.lastAt = 0; }
+      saveSync(); route();
+    });
+    document.getElementById("genkey").addEventListener("click", () => {
+      SYNC.key = newSyncKey(); SYNC.version = 0; SYNC.lastAt = 0;
+      saveSync(); toast("New key generated — copy it to your other devices"); route();
+    });
+    const copyBtn = document.getElementById("copykey");
+    if (copyBtn) copyBtn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(prettyKey(SYNC.key)); toast("Key copied"); }
+      catch { toast("Copy failed — select the field and copy manually"); }
+    });
+    document.getElementById("synctoggle").addEventListener("click", async () => {
+      if (SYNC.enabled) {
+        SYNC.enabled = false; saveSync(); toast("Sync turned off"); route(); return;
+      }
+      if (!SYNC.url || !SYNC.key) { toast("Set a server URL and a key first"); return; }
+      SYNC.enabled = true; saveSync();
+      const r = await syncNow();
+      if (!r.ok) { SYNC.enabled = false; saveSync(); route(); }
+    });
+    const nowBtn = document.getElementById("syncnow");
+    if (nowBtn) nowBtn.addEventListener("click", () => syncNow());
     document.getElementById("exp").addEventListener("click", () => {
       const blob = new Blob([JSON.stringify(S, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
@@ -983,13 +1072,30 @@ function wire(view) {
           const d = JSON.parse(r.result);
           if (!d || typeof d !== "object" || !d.done) throw new Error("bad shape");
           S = Object.assign(blank(), d);
-          save(); route(); toast("Progress imported");
+          // Exports made before sync existed have no timestamps. Stamp them now so an
+          // explicit import wins over whatever is already on the server.
+          if (!d.t) {
+            const now = Date.now();
+            S.t = {};
+            for (const map of ["done", "notes", "conf", "projects", "iv", "dsa", "redo"])
+              for (const k of Object.keys(S[map] || {})) S.t[map + ":" + k] = now;
+            S.t["meta:startDate"] = now;
+          }
+          save(); queueSync(); route(); toast("Progress imported");
         } catch (err) { toast("That file isn't a valid export"); }
       };
       r.readAsText(f);
     });
-    document.getElementById("reset").addEventListener("click", () => {
+    document.getElementById("reset").addEventListener("click", async () => {
       if (!confirm("Wipe all progress? This cannot be undone. Export first if unsure.")) return;
+      if (SYNC.enabled && SYNC.url && SYNC.key) {
+        // Without this the next sync would pull everything straight back from the server.
+        if (confirm("Also delete the synced copy on the server?\n\nOK = wipe everywhere.\nCancel = wipe this device only and turn sync off.")) {
+          try { await fetch(apiURL(), { method: "DELETE", headers: syncHeaders() }); }
+          catch (e) { toast("Could not reach the server — turned sync off instead"); }
+        }
+        SYNC.enabled = false; SYNC.version = 0; SYNC.lastAt = 0; saveSync();
+      }
       localStorage.removeItem(KEY);
       S = load(); route(); toast("Reset");
     });

@@ -3,3 +3,8 @@
 node_modules/
 # your exported progress files — keep these out of the public repo
 ai-coop-90-progress-*.json
+server/node_modules/
+server/dist/
+server/.env
+server/.data/
+server/drizzle/

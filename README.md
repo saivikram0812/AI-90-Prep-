@@ -87,11 +87,35 @@ title + channel. Video IDs rot; searches don't. Take the top result from the nam
 `fetch`ed JSON, specifically so `file://` works — double-click and it runs. Deploy by dropping
 the folder on GitHub Pages, Netlify, or Vercel.
 
-**Progress is local-first.** No backend, no account, no telemetry. The tradeoff is that it lives
-in one browser, hence the export button.
+**Progress is local-first, sync is optional.** Everything works with no server at all. Turn on
+sync and it works across devices — see below. There is no account and no telemetry either way.
 
 **The cheat notes are deliberately terse and slightly cryptic.** They're memory hooks for
 something you already understood that day, not a substitute for the explanation.
+
+---
+
+## Using it on more than one device
+
+The site is static, so it runs anywhere. Progress is the part that needs help.
+
+**Get the site on your devices** — push to GitHub and enable Pages:
+
+```bash
+gh auth login && gh repo create ai-coop-90 --public --source=. --push
+```
+
+**Then turn on sync** (Settings → Device sync). It's two-way and merges *per item*, so ticking
+a NeetCode problem on your phone and a day on your laptop both survive — neither device
+clobbers the other. Un-ticking propagates too. It pushes a couple of seconds after any change,
+pulls whenever you return to the tab, and queues quietly when you're offline.
+
+Setup is one command locally and about ten minutes to deploy — see **[server/README.md](server/README.md)**.
+You generate a sync key on one device and paste it on the other; that key is the only credential,
+so treat it like a password.
+
+**Or don't** — Settings → Export/Import moves progress as a JSON file, which is fine if one
+device is clearly your primary.
 
 ---
 
@@ -101,6 +125,8 @@ something you already understood that day, not a substitute for the explanation.
 index.html                    shell + nav
 css/style.css                 all styling (incl. handwritten paper notes + print stylesheet)
 js/app.js                     routing, state, all views
+js/sync.js                    per-key merge + transport (the conflict-resolution logic)
+server/                       optional Hono + Postgres sync service — see its own README
 js/data/curriculum-p1.js      days  1–30   Foundations → Trees & Ensembles
 js/data/curriculum-p2.js      days 31–60   DS toolkit → PyTorch → CNNs → Transformers
 js/data/curriculum-p3.js      days 61–90   LLM engineering → RAG → Agents → MLOps → Interview
