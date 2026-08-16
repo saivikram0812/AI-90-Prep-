@@ -35,8 +35,8 @@ window.CURRICULUM_P1 = [
     warn: "NEVER let test data influence any decision. Not scaling, not feature selection, not 'just peeking'. That is leakage and it silently inflates every number you report."
   },
   vids: [
-    { t: "But what is a neural network", ch: "3Blue1Brown" },
-    { t: "Machine Learning for Everybody full course", ch: "freeCodeCamp" }
+    { t: "A gentle introduction to machine learning", ch: "StatQuest" },
+    { t: "But what is a neural network", ch: "3Blue1Brown" }
   ],
   lab: {
     t: "Set up your 90-day repo",
@@ -88,8 +88,9 @@ window.CURRICULUM_P1 = [
     warn: "* is NOT matrix multiply. (n,1) and (1,n) broadcast into (n,n) — a classic silent bug that eats your RAM and your afternoon."
   },
   vids: [
-    { t: "NumPy full course for beginners", ch: "freeCodeCamp" },
-    { t: "NumPy broadcasting explained", ch: "Keith Galli" }
+    { t: "NumPy broadcasting explained", ch: "Keith Galli" },
+    { t: "NumPy full course for beginners", ch: "freeCodeCamp",
+      n: "1h course · watch only up to broadcasting (~first 30 min), then stop" }
   ],
   lab: {
     t: "Vectorise everything",
@@ -139,8 +140,8 @@ window.CURRICULUM_P1 = [
     warn: "SettingWithCopyWarning is not noise. It means you may be writing to a temporary view and your change may vanish. Fix it with .loc or an explicit .copy()."
   },
   vids: [
-    { t: "Pandas tutorial complete", ch: "Corey Schafer" },
-    { t: "Data analysis with pandas full course", ch: "Keith Galli" }
+    { t: "Pandas tutorial loc iloc selecting rows and columns", ch: "Corey Schafer" },
+    { t: "Pandas handling missing data dropna fillna", ch: "Corey Schafer" }
   ],
   lab: {
     t: "Clean a genuinely messy dataset",

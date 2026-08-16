@@ -351,14 +351,21 @@ function viewDay(n) {
   </div>
 
   <div class="sec">
-    <h4>Watch</h4>
+    <h4>Watch — optional, ~20 min</h4>
+    <div class="why-box" style="border-left-color:var(--txt-3);margin-bottom:11px;font-size:13.2px">
+      <b style="color:var(--txt)">You do not need these to do the lab.</b> The
+      <i>Understand it</i> section above is the actual teaching — videos are reinforcement for
+      anything that did not land. Where a link is a long course, the note says which part to watch.
+      Never watch a whole 4-hour course in a day; that is not what this plan expects of you.
+    </div>
     ${d.vids.map(v => `
-      <a class="vid" href="${ytURL(v)}" target="_blank" rel="noopener">
+      <a class="vid ${v.n ? "long" : ""}" href="${ytURL(v)}" target="_blank" rel="noopener">
         <div class="play">▶</div>
-        <div><div class="tt">${esc(v.t)}</div><div class="ch">${esc(v.ch)} · YouTube</div></div>
+        <div><div class="tt">${esc(v.t)}</div>
+          <div class="ch">${esc(v.ch)} · ${v.n ? esc(v.n) : "short video"}</div></div>
       </a>`).join("")}
     <p style="font-size:11.5px;color:var(--txt-3);margin-top:9px">
-      These open a YouTube search for that exact title and channel — so the links never rot.
+      Links open a YouTube search for that exact title and channel, so they never rot.
       Pick the top result from the named channel.</p>
   </div>
 

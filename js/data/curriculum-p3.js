@@ -1199,7 +1199,8 @@ window.CURRICULUM_P3 = [
     warn: "Non-idempotent pipeline tasks cause duplicated or corrupted data on retry — and retries always happen. Design every task so rerunning it is safe."
   },
   vids: [
-    { t: "Apache airflow tutorial for beginners", ch: "freeCodeCamp" },
+    { t: "Apache airflow tutorial for beginners", ch: "freeCodeCamp",
+      n: "2h course · watch the DAG-basics section only (~30 min)" },
     { t: "Feature stores explained machine learning", ch: "Tecton" }
   ],
   lab: {

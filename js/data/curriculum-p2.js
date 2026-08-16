@@ -89,7 +89,8 @@ window.CURRICULUM_P2 = [
     warn: "Sample Ratio Mismatch (observed split != intended split) invalidates the whole test — it means assignment is broken. Check it FIRST, before reading any result."
   },
   vids: [
-    { t: "A/B testing full course data science", ch: "Data Science Dojo" },
+    { t: "A/B testing full course data science", ch: "Data Science Dojo",
+      n: "3h course · reference only — watch the sample-size section, skip the rest" },
     { t: "CUPED variance reduction explained", ch: "Statsig" }
   ],
   lab: {
@@ -141,7 +142,8 @@ window.CURRICULUM_P2 = [
     warn: "A rolling mean computed with pandas .rolling() includes the CURRENT row by default. Shift by 1 or you have leaked the answer into the feature."
   },
   vids: [
-    { t: "Time series analysis full course python", ch: "freeCodeCamp" },
+    { t: "Time series analysis full course python", ch: "freeCodeCamp",
+      n: "3h course · watch the decomposition + stationarity parts only (~40 min)" },
     { t: "Time series forecasting with machine learning", ch: "Rob Mulla" }
   ],
   lab: {
@@ -299,8 +301,10 @@ window.CURRICULUM_P2 = [
     warn: "model.eval() does NOT disable gradients, and torch.no_grad() does NOT disable dropout. They are separate concerns and you need both at inference."
   },
   vids: [
-    { t: "PyTorch tutorial for beginners full course", ch: "Patrick Loeber" },
-    { t: "The spelled-out intro to neural networks and backpropagation micrograd", ch: "Andrej Karpathy" }
+    { t: "PyTorch tutorial for beginners full course", ch: "Patrick Loeber",
+      n: "playlist · watch parts 1-4 only (tensors + autograd), ~35 min" },
+    { t: "The spelled-out intro to neural networks and backpropagation micrograd", ch: "Andrej Karpathy",
+      n: "2.5h · THIS IS TODAY'S LAB, not extra — code along, pause often" }
   ],
   lab: {
     t: "Build micrograd (seriously, do this one)",
@@ -1180,7 +1184,8 @@ window.CURRICULUM_P2 = [
   },
   vids: [
     { t: "Transformers explained visually", ch: "3Blue1Brown" },
-    { t: "Let's build GPT from scratch in code", ch: "Andrej Karpathy" }
+    { t: "Let's build GPT from scratch in code", ch: "Andrej Karpathy",
+      n: "2h · THIS IS TODAY'S LAB, not extra — type every line yourself" }
   ],
   lab: {
     t: "Build nanoGPT with Karpathy",
@@ -1231,7 +1236,8 @@ window.CURRICULUM_P2 = [
     warn: "Never estimate context usage by character count. Measure with the actual tokeniser — being wrong here means silent truncation of your prompts in production."
   },
   vids: [
-    { t: "Let's build the GPT tokenizer", ch: "Andrej Karpathy" },
+    { t: "Let's build the GPT tokenizer", ch: "Andrej Karpathy",
+      n: "2h · THIS IS TODAY'S LAB, not extra — code along" },
     { t: "Byte pair encoding tokenization explained", ch: "HuggingFace" }
   ],
   lab: {
@@ -1488,7 +1494,8 @@ window.CURRICULUM_P2 = [
     warn: "For extraction, classification, and structured output use temperature 0. Creative defaults (0.7-1.0) in a data-extraction pipeline produce silent inconsistency across runs."
   },
   vids: [
-    { t: "Intro to large language models", ch: "Andrej Karpathy" },
+    { t: "Intro to large language models", ch: "Andrej Karpathy",
+      n: "1h talk · worth all of it, but split across two days if tight" },
     { t: "How LLMs generate text sampling temperature top-p", ch: "Efficient NLP" }
   ],
   lab: {

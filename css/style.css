@@ -537,3 +537,8 @@ input,select,textarea{font-family:inherit;font-size:inherit}
   .note{transform:none!important;box-shadow:none;border:1px solid #ccc;
     break-inside:avoid;page-break-inside:avoid}
 }
+
+/* long-form video links get a visible warning tint */
+.vid.long{border-color:rgba(255,157,61,.32)}
+.vid.long .ch{color:var(--acc-2)}
+.vid.long:hover{border-color:var(--acc)}
