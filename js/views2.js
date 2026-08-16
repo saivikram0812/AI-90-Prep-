@@ -232,20 +232,34 @@ async function loadNews() {
    the kind of source, the engagement shape, and the story's own text when it
    has any. Varied, honest, and enough to decide whether to open it.
 ------------------------------------------------------------------------- */
-const NEWS_KINDS = [
-  { k: "Model release", c: "acc",
-    re: /\b(release[ds]?|launch(es|ed)?|announc\w*|introduc\w*|unveil\w*|now available|ships?|GPT-?\d|Claude \d|Gemini \d|Llama ?\d)\b/i },
-  { k: "Research", c: "pur",
-    re: /\b(paper|arxiv|study|researchers?|benchmark|SOTA|state.of.the.art|novel method)\b/i },
-  { k: "Tooling", c: "blu",
-    re: /\b(show hn|open.?source|library|framework|SDK|API|CLI|repo|github|I built|I made)\b/i },
-  { k: "Safety", c: "red",
-    re: /\b(safety|alignment|regulat\w*|policy|ban|lawsuit|copyright|privacy|ethic\w*|harm)\b/i },
-  { k: "Industry", c: "pnk",
-    re: /\b(raise[sd]?|funding|valuation|acquir\w*|layoff|hiring|revenue|IPO|billion|CEO|leaves|joins)\b/i },
-  { k: "Discussion", c: "", re: /.*/ }
+const K_MODEL  = { k: "Model release", c: "acc" };
+const K_RESEARCH = { k: "Research", c: "pur" };
+const K_TOOL   = { k: "Tooling", c: "blu" };
+const K_SAFETY = { k: "Safety", c: "red" };
+const K_BIZ    = { k: "Industry", c: "pnk" };
+const K_TAKE   = { k: "Analysis", c: "" };
+
+const TITLE_RULES = [
+  [K_TOOL,     /\b(show hn|open.?sourc\w*|library|framework|SDK|CLI|repo|toolkit|sandbox\w*|runtime|container|self.host\w*|I built|I made|introducing \w+ for)\b/i],
+  [K_MODEL,    /\b(release[ds]?|launch(es|ed|ing)?|announc\w*|unveil\w*|now available|ships?|GPT-?\d|Claude \d|Gemini \d|Llama ?\d|new model|open weights?)\b/i],
+  [K_RESEARCH, /\b(paper|arxiv|study|researchers?|benchmark|SOTA|state.of.the.art|we (show|find|present)|attack|stealing|extract\w*|distill\w*|probing|traces|evaluat\w*|ablation)\b/i],
+  [K_SAFETY,   /\b(safety|alignment|regulat\w*|policy|ban(ned|s)?|lawsuit|copyright|privacy|ethic\w*|harm|jailbreak|misuse)\b/i],
+  [K_BIZ,      /\b(raise[sd]?|funding|valuation|acquir\w*|layoff|hiring|revenue|IPO|billion|CEO|leaves|joins|attacks|rivals|market|compet\w*)\b/i]
 ];
-function classifyNews(t) { return NEWS_KINDS.find(x => x.re.test(t)) || NEWS_KINDS[5]; }
+const DOMAIN_RULES = [
+  [K_RESEARCH, /arxiv\.org|openreview|nature\.com|science\.org/i],
+  [K_TOOL,     /github\.com|gitlab|npmjs|pypi|docker\.com|huggingface\.co/i],
+  [K_BIZ,      /techcrunch|theverge|wired|reuters|nytimes|wsj|ft\.com|bloomberg|businessinsider|cnbc/i],
+  [K_MODEL,    /(openai|anthropic|deepmind|mistral|cerebras|nvidia|cohere|meta)\.(com|ai)/i]
+];
+/* Title signals first (most specific), then the domain, then a neutral fallback. */
+function classifyNews(t, dom) {
+  const byTitle = TITLE_RULES.find(r => r[1].test(t));
+  if (byTitle) return byTitle[0];
+  const byDom = DOMAIN_RULES.find(r => r[1].test(dom || ""));
+  if (byDom) return byDom[0];
+  return K_TAKE;
+}
 
 function domainOf(u) {
   try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return "news.ycombinator.com"; }
@@ -271,9 +285,14 @@ function newsBlurb(h) {
   const bits = [];
   // the story's own text, when it is a self-post
   if (h.txt) {
-    const clean = h.txt.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'")
-                       .replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
-    if (clean.length > 40) bits.push(clean.slice(0, 220) + (clean.length > 220 ? "…" : ""));
+    const clean = h.txt.replace(/<[^>]+>/g, " ")
+                       .replace(/&#x2F;/g, "/").replace(/&#x27;/g, "'")
+                       .replace(/&quot;/g, '"').replace(/&amp;/g, "&")
+                       .replace(/\s+/g, " ").trim();
+    // Self-post text is often just a bare archive link. Strip URLs and only use
+    // it if there is real prose left underneath.
+    const prose = clean.replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
+    if (prose.length >= 60) bits.push(prose.slice(0, 210) + (prose.length > 210 ? "…" : ""));
   }
   if (!bits.length) {
     const sn = sourceNote(domainOf(h.u));
@@ -295,7 +314,7 @@ function renderNews(hits) {
   if (!box) return;
   if (!hits.length) { box.textContent = "Nothing notable in the last week."; return; }
   box.innerHTML = hits.map(h => {
-    const kind = classifyNews(h.t);
+    const kind = classifyNews(h.t, domainOf(h.u));
     return `
     <a class="news" href="https://news.ycombinator.com/item?id=${esc(h.id)}"
        target="_blank" rel="noopener">
