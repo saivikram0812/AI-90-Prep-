@@ -123,19 +123,32 @@ async function loadNews() {
 
   box.textContent = "Loading…";
   try {
+    // The HN Algolia API treats `query` as a phrase — it does NOT support boolean OR.
+    // So run a few single-term queries in parallel and merge, deduping by story id.
     const since = Math.floor(Date.now() / 1000) - 7 * 86400;
-    const url = "https://hn.algolia.com/api/v1/search?tags=story&numericFilters=" +
-                `created_at_i>${since},points>40&hitsPerPage=60&query=` +
-                encodeURIComponent("AI OR LLM OR model OR OpenAI OR Anthropic OR GPT");
-    const r = await fetch(url);
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const j = await r.json();
-    const kw = /\b(ai|llm|gpt|claude|gemini|openai|anthropic|model|neural|agent|transformer|diffusion|deepseek|llama|mistral|rag)\b/i;
-    const hits = (j.hits || [])
-      .filter(h => h.title && kw.test(h.title))
+    const base = "https://hn.algolia.com/api/v1/search?tags=story&numericFilters=" +
+                 `created_at_i>${since},points>30&hitsPerPage=40&query=`;
+    const terms = ["AI", "LLM", "OpenAI", "Anthropic", "machine learning"];
+    const results = await Promise.all(terms.map(t =>
+      fetch(base + encodeURIComponent(t))
+        .then(r => r.ok ? r.json() : { hits: [] })
+        .catch(() => ({ hits: [] }))
+    ));
+
+    const kw = /\b(ai|llm|gpt|claude|gemini|openai|anthropic|model|models|neural|agent|agents|transformer|diffusion|deepseek|llama|mistral|rag|ml|gpu|inference|training)\b/i;
+    const seen = new Set();
+    const hits = results
+      .flatMap(j => j.hits || [])
+      .filter(h => {
+        if (!h.title || seen.has(h.objectID) || !kw.test(h.title)) return false;
+        seen.add(h.objectID);
+        return true;
+      })
       .sort((a, b) => b.points - a.points)
       .slice(0, 8)
       .map(h => ({ t: h.title, u: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`, p: h.points }));
+
+    if (!hits.length) throw new Error("no stories matched");
     try { sessionStorage.setItem(KEY, JSON.stringify({ at: Date.now(), hits })); } catch (e) {}
     renderNews(hits);
   } catch (e) {
