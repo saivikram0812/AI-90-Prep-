@@ -118,7 +118,10 @@ async function loadNews() {
   const KEY = "aicoop90.news";
   try {
     const cached = JSON.parse(sessionStorage.getItem(KEY) || "null");
-    if (cached && Date.now() - cached.at < 30 * 60 * 1000) return renderNews(cached.hits);
+    // Never serve an empty cached result — a transient failure would otherwise
+    // stick for the whole session.
+    if (cached && cached.hits && cached.hits.length &&
+        Date.now() - cached.at < 30 * 60 * 1000) return renderNews(cached.hits);
   } catch (e) { /* ignore a bad cache */ }
 
   box.textContent = "Loading…";
