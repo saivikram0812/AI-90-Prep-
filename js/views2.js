@@ -13,13 +13,13 @@ function ailabDone(d) { return !!S.lab[d]; }
 
 function toolCard(t, compact) {
   const [cc, cl] = COST_CHIP[t.cost] || ["", t.cost];
+  const done = ailabDone(t.d);
   return `
-  <div class="tool ${ailabDone(t.d) ? "ok" : ""}">
+  <div class="tool ${done ? "ok" : ""}">
     <div class="tool-hd">
-      <button class="ds-tick" data-labtick="${t.d}" title="Mark done">✓</button>
       <div style="flex:1;min-width:0">
         <div class="tool-t">
-          <a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.name)}</a>
+          <a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.name)} ↗</a>
           <span class="chip">${esc(t.cat)}</span>
           <span class="chip ${cc}">${esc(cl)}</span>
           ${compact ? "" : `<span class="chip">day ${t.d}</span>`}
@@ -29,6 +29,9 @@ function toolCard(t, compact) {
     </div>
     <div class="tool-task"><b>Try this (15–25 min)</b>${esc(t.task)}</div>
     <div class="tool-why">${esc(t.why)}</div>
+    <button class="mark ${done ? "on" : ""}" data-labtick="${t.d}">
+      ${done ? "✓ Tried it" : "Mark as tried"}
+    </button>
   </div>`;
 }
 
@@ -81,6 +84,8 @@ function viewAilab() {
     ${toolCard(today, true)}
   </div>` : ""}
 
+  ${weeklyHTML(Math.min(13, Math.ceil(sched / 7)))}
+
   <div class="card" id="newsbox">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap">
       <h4 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--txt-3)">
@@ -108,6 +113,65 @@ function viewAilab() {
 
   ${list.length ? list.map(t => toolCard(t)).join("")
     : `<div class="empty"><div class="big">∅</div><p>Nothing matches that filter.</p></div>`}`;
+}
+
+/* ---- weekly creative build ---- */
+function weekDone(w) { return !!S.wk[w]; }
+function weeklyHTML(curW) {
+  const all = window.WEEKLY || [];
+  const b = all.find(x => x.w === curW);
+  if (!b) return "";
+  return `
+  <div class="wkb">
+    <div class="wkb-hd">
+      <span class="chip acc">Week ${b.w} build</span>
+      <span class="chip">${esc(b.time)}</span>
+      <span class="chip ${weekDone(b.w) ? "grn" : ""}">${weekDone(b.w) ? "\u2713 built" : "not started"}</span>
+      <button class="btn sm ghost" data-go="#/weekly" style="margin-left:auto;padding:3px 9px">
+        all 13 \u2192</button>
+    </div>
+    <h3>${esc(b.title)}</h3>
+    <p class="wkb-pitch">${esc(b.pitch)}</p>
+    <div class="wkb-tools">${b.tools.map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>
+    <ol class="wkb-steps">${b.steps.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+    <div class="wkb-out"><b>You end up with</b>${esc(b.out)}</div>
+    <div class="wkb-share"><b>Worth posting?</b>${esc(b.share)}</div>
+    <button class="mark ${weekDone(b.w) ? "on" : ""}" data-wktick="${b.w}">
+      ${weekDone(b.w) ? "\u2713 Built it" : "Mark as built"}</button>
+  </div>`;
+}
+
+function viewWeekly() {
+  const all = window.WEEKLY || [];
+  const cur = Math.min(13, Math.ceil(scheduledDay() / 7));
+  const done = Object.keys(S.wk).length;
+  return `
+  <div class="page-head">
+    <h2>Weekly builds</h2>
+    <p>One genuinely different thing per week \u2014 2\u20134 hours, and each produces something
+       worth showing. These are deliberately not the standard portfolio projects: nobody else
+       in your cohort will have animated a loss surface or fine-tuned a model on their own
+       writing. <b>${done} of 13 built.</b></p>
+  </div>
+  ${all.map(b => `
+    <div class="wkb ${b.w === cur ? "now" : ""} ${weekDone(b.w) ? "ok" : ""}">
+      <div class="wkb-hd">
+        <span class="chip ${b.w === cur ? "acc" : ""}">Week ${b.w}${b.w === cur ? " \u00b7 now" : ""}</span>
+        <span class="chip">${esc(b.time)}</span>
+        ${weekDone(b.w) ? `<span class="chip grn">\u2713 built</span>` : ""}
+      </div>
+      <h3>${esc(b.title)}</h3>
+      <p class="wkb-pitch">${esc(b.pitch)}</p>
+      <div class="wkb-tools">${b.tools.map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>
+      <details><summary>Steps &amp; what to post</summary>
+        <ol class="wkb-steps">${b.steps.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+        <div class="wkb-out"><b>You end up with</b>${esc(b.out)}</div>
+        <div class="wkb-share"><b>Worth posting?</b>${esc(b.share)}</div>
+        <div class="wkb-why">${esc(b.why)}</div>
+      </details>
+      <button class="mark ${weekDone(b.w) ? "on" : ""}" data-wktick="${b.w}">
+        ${weekDone(b.w) ? "\u2713 Built it" : "Mark as built"}</button>
+    </div>`).join("")}`;
 }
 
 /* Live AI news. Hacker News' Algolia API is public, free and CORS-enabled,
@@ -149,7 +213,8 @@ async function loadNews() {
       })
       .sort((a, b) => b.points - a.points)
       .slice(0, 8)
-      .map(h => ({ t: h.title, u: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`, p: h.points }));
+      .map(h => ({ t: h.title, u: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
+                   p: h.points, c: h.num_comments, id: h.objectID }));
 
     if (!hits.length) throw new Error("no stories matched");
     try { sessionStorage.setItem(KEY, JSON.stringify({ at: Date.now(), hits })); } catch (e) {}
@@ -159,14 +224,54 @@ async function loadNews() {
       <a href="https://news.ycombinator.com/" target="_blank" rel="noopener">Open Hacker News →</a></span>`;
   }
 }
+/* Classify a headline so you can tell at a glance what KIND of news it is
+   and whether it matters to you, without opening anything. */
+const NEWS_KINDS = [
+  { k: "Model release", c: "acc",
+    re: /\b(release[ds]?|launch(es|ed)?|announc\w*|introduc\w*|unveil\w*|now available|ships?|GPT-?\d|Claude \d|Gemini \d|Llama ?\d|v\d+(\.\d+)?)\b/i,
+    note: "A new model or version. Worth knowing the name and roughly what it beats." },
+  { k: "Research", c: "pur",
+    re: /\b(paper|arxiv|study|researchers?|we (show|find|present)|benchmark|SOTA|state.of.the.art|novel|method)\b/i,
+    note: "A result or technique. Read the abstract only unless it is directly on your path." },
+  { k: "Tooling", c: "blu",
+    re: /\b(show hn|open.?source|library|framework|SDK|API|tool|CLI|repo|github|built|I made|launch hn)\b/i,
+    note: "Something you could actually use this week. The highest-value category for you." },
+  { k: "Safety / policy", c: "red",
+    re: /\b(safety|alignment|regulat\w*|policy|ban|lawsuit|copyright|privacy|ethic\w*|risk|harm|EU|act)\b/i,
+    note: "Context, not craft. Useful for interview small talk, not for building." },
+  { k: "Industry", c: "pnk",
+    re: /\b(raise[sd]?|funding|valuation|acquir\w*|layoff|hiring|revenue|IPO|billion|million|CEO|leaves|joins)\b/i,
+    note: "Business news. Skim only \u2014 rarely changes what you should build." },
+  { k: "Opinion", c: "", re: /.*/,
+    note: "Someone\u2019s take. Read the comments rather than the article if you read it at all." }
+];
+function classifyNews(title) {
+  return NEWS_KINDS.find(x => x.re.test(title)) || NEWS_KINDS[NEWS_KINDS.length - 1];
+}
+function domainOf(u) {
+  try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return "news.ycombinator.com"; }
+}
+
 function renderNews(hits) {
   const box = document.getElementById("newslist");
   if (!box) return;
   if (!hits.length) { box.textContent = "Nothing notable in the last week."; return; }
-  box.innerHTML = hits.map(h => `
-    <a class="news" href="${esc(h.u)}" target="_blank" rel="noopener">
-      <span class="news-p">${h.p}</span><span class="news-t">${esc(h.t)}</span>
-    </a>`).join("");
+  box.innerHTML = hits.map(h => {
+    const kind = classifyNews(h.t);
+    return `
+    <div class="news">
+      <div class="news-hd">
+        <span class="chip ${kind.c}">${esc(kind.k)}</span>
+        <span class="news-src">${esc(domainOf(h.u))}</span>
+        <span class="news-p">${h.p} pts \u00b7 ${h.c || 0} comments</span>
+      </div>
+      <div class="news-t">${esc(h.t)}</div>
+      <div class="news-why">${esc(kind.note)}</div>
+      <a class="news-lnk" href="${esc(h.u)}" target="_blank" rel="noopener">read \u2197</a>
+      <a class="news-lnk" href="https://news.ycombinator.com/item?id=${esc(h.id)}"
+         target="_blank" rel="noopener">discussion \u2197</a>
+    </div>`;
+  }).join("");
 }
 
 /* ------------------------------------------------ REVIEW ------ */

@@ -66,6 +66,7 @@ function blank() {
            lab: {},    // AI Lab tools tried
            srs: {},    // spaced-repetition schedule
            apps: [],   // application tracker
+           wk: {},     // weekly creative builds
            t: {},   // per-key mutation timestamps — see sync.js for why
            v: 2 };
 }
@@ -162,7 +163,7 @@ function toast(msg) {
 
 /* ---------------- routing ---------------- */
 const ROUTES = ["dash", "day", "plan", "notes", "dsa", "ailab", "review", "apps",
-                "projects", "interview", "journey", "settings"];
+                "weekly", "projects", "interview", "journey", "settings"];
 function go(hash) { location.hash = hash; }
 function route() {
   const h = (location.hash || "#/dash").replace(/^#\/?/, "");
@@ -175,7 +176,7 @@ function route() {
   window.scrollTo(0, 0);
   main.innerHTML = ({
     dash: viewDash, day: () => viewDay(+arg || nextUp()), plan: viewPlan,
-    notes: viewNotes, dsa: viewDSA, ailab: viewAilab, review: viewReview, apps: viewApps,
+    notes: viewNotes, dsa: viewDSA, ailab: viewAilab, review: viewReview, apps: viewApps, weekly: viewWeekly,
     projects: viewProjects, interview: viewInterview,
     journey: viewJourney, settings: viewSettings
   })[v]();
@@ -216,6 +217,8 @@ function renderSide() {
   document.querySelector('[data-v="ailab"] .badge').textContent =
     `${Object.keys(S.lab).length}/${(window.AILAB || []).length}`;
   document.querySelector('[data-v="apps"] .badge').textContent = `${(S.apps || []).length}`;
+  document.querySelector('[data-v="weekly"] .badge').textContent =
+    `${Object.keys(S.wk || {}).length}/13`;
   const ivTotal = INTERVIEW.reduce((a, c) => a + c.qs.length, 0);
   document.querySelector('[data-v="interview"] .badge').textContent =
     `${Object.keys(S.iv).length}/${ivTotal}`;
@@ -995,6 +998,12 @@ function wire(view) {
       try { sessionStorage.removeItem("aicoop90.news"); } catch (e) {}
       loadNews();
     });
+    document.querySelectorAll("[data-wktick]").forEach(b =>
+      b.addEventListener("click", () => {
+        const w = b.dataset.wktick;
+        if (S.wk[w]) delete S.wk[w]; else { S.wk[w] = new Date().toISOString(); toast("Nice. Go post it."); }
+        save(); route();
+      }));
     document.querySelectorAll("[data-labtick]").forEach(b =>
       b.addEventListener("click", () => {
         const d = b.dataset.labtick;
@@ -1014,6 +1023,15 @@ function wire(view) {
     });
     document.getElementById("lcat").addEventListener("change", e => { labF.cat = e.target.value; route(); });
     document.getElementById("lstatus").addEventListener("change", e => { labF.status = e.target.value; route(); });
+  }
+
+  if (view === "weekly") {
+    document.querySelectorAll("[data-wktick]").forEach(b =>
+      b.addEventListener("click", () => {
+        const w = b.dataset.wktick;
+        if (S.wk[w]) delete S.wk[w]; else { S.wk[w] = new Date().toISOString(); toast("Nice. Go post it."); }
+        save(); route();
+      }));
   }
 
   if (view === "review") {
