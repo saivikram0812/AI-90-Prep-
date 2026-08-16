@@ -342,11 +342,7 @@ function viewDay(n) {
     <div class="why-box">${esc(d.why)}</div>
   </div>
 
-  <div class="sec">
-    <h4>Understand it</h4>
-    ${d.learn.map(l => `
-      <div class="learn-item"><h5>${esc(l.h)}</h5><p>${esc(l.p)}</p></div>`).join("")}
-  </div>
+  ${lessonHTML(n, d)}
 
   <div class="sec">
     <h4>Cheat note — copy this into your own handwriting</h4>
@@ -406,6 +402,48 @@ function viewDay(n) {
         `<button data-conf="${i}" class="${S.conf[n] === i ? "on" : ""}">${i}</button>`).join("")}
     </div>
     ${next ? `<button class="btn ghost" style="margin-left:auto" data-go="#/day/${next}">Next day →</button>` : ""}
+  </div>`;
+}
+
+/* Full lesson if one exists for this day, otherwise the short summary. */
+function lessonHTML(n, d) {
+  const L = (window.DEEP || {})[n];
+  if (!L) {
+    return `
+    <div class="sec">
+      <h4>Understand it</h4>
+      <div class="why-box" style="border-left-color:var(--txt-3);font-size:12.8px;margin-bottom:10px">
+        This day still has the short summary. Full beginner lessons are being written
+        week by week — ask and I'll write this one next.
+      </div>
+      ${d.learn.map(l => `
+        <div class="learn-item"><h5>${esc(l.h)}</h5><p>${esc(l.p)}</p></div>`).join("")}
+    </div>`;
+  }
+  return `
+  <div class="sec">
+    <h4>The lesson — read this properly (~${L.mins} min)</h4>
+    <div class="lesson">
+      <p class="lesson-intro">${esc(L.intro)}</p>
+      ${L.secs.map(s => `
+        <div class="ls">
+          <h5>${esc(s.h)}</h5>
+          ${(s.ps || []).map(p => `<p>${esc(p)}</p>`).join("")}
+          ${s.ex ? `
+            <div class="ls-ex">
+              <div class="ls-ex-t">${esc(s.ex.t)}</div>
+              <pre>${esc(s.ex.x)}</pre>
+            </div>` : ""}
+          ${(s.ps2 || []).map(p => `<p>${esc(p)}</p>`).join("")}
+          ${s.code ? `<pre class="ls-code">${esc(s.code)}</pre>` : ""}
+          ${s.key ? `<div class="ls-key"><b>In one line</b>${esc(s.key)}</div>` : ""}
+        </div>`).join("")}
+    </div>
+    <details class="pat-note" style="margin-top:12px">
+      <summary>Quick recap (the short version)</summary>
+      ${d.learn.map(l => `
+        <div class="learn-item"><h5>${esc(l.h)}</h5><p>${esc(l.p)}</p></div>`).join("")}
+    </details>
   </div>`;
 }
 
