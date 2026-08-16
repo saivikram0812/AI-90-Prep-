@@ -706,15 +706,19 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .mark.on{background:rgba(74,222,128,.14);border-color:rgba(74,222,128,.45);color:var(--grn)}
 .mark.on:hover{border-color:var(--grn)}
 
-/* ---------- news cards ---------- */
-.news{padding:13px 0;border-top:1px solid var(--line)}
-.news:first-child{border-top:none;padding-top:2px}
-.news-hd{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+/* ---------- news widget ---------- */
+.news{
+  display:block;text-decoration:none;color:inherit;
+  padding:14px 16px;border-radius:11px;background:var(--bg-3);
+  border:1px solid transparent;transition:.14s;
+}
+.news + .news{margin-top:8px}
+.news:hover{border-color:var(--line-2);text-decoration:none;transform:translateX(2px)}
+.news-hd{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
 .news-src{font-size:11px;color:var(--txt-3);font-family:var(--mono)}
-.news-p{font-size:11px;color:var(--txt-3);margin-left:auto;font-variant-numeric:tabular-nums}
-.news-t{font-size:14.5px;font-weight:600;color:var(--txt);line-height:1.45}
-.news-why{font-size:12.6px;color:var(--txt-3);margin-top:5px;line-height:1.55;font-style:italic}
-.news-lnk{font-size:11.5px;color:var(--acc);margin-right:14px;display:inline-block;margin-top:7px}
+.news-t{font-size:15px;font-weight:650;color:var(--txt);line-height:1.4;margin-bottom:6px}
+.news:hover .news-t{color:var(--acc-2)}
+.news-why{font-size:13px;color:var(--txt-3);line-height:1.65}
 
 /* ---------- weekly build ---------- */
 .wkb{

@@ -212,9 +212,10 @@ async function loadNews() {
         return true;
       })
       .sort((a, b) => b.points - a.points)
-      .slice(0, 8)
+      .slice(0, 6)
       .map(h => ({ t: h.title, u: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
-                   p: h.points, c: h.num_comments, id: h.objectID }));
+                   p: h.points, c: h.num_comments || 0, id: h.objectID,
+                   txt: h.story_text || "", at: h.created_at_i }));
 
     if (!hits.length) throw new Error("no stories matched");
     try { sessionStorage.setItem(KEY, JSON.stringify({ at: Date.now(), hits })); } catch (e) {}
@@ -224,32 +225,69 @@ async function loadNews() {
       <a href="https://news.ycombinator.com/" target="_blank" rel="noopener">Open Hacker News →</a></span>`;
   }
 }
-/* Classify a headline so you can tell at a glance what KIND of news it is
-   and whether it matters to you, without opening anything. */
+/* ---- news classification + a per-story blurb ----------------------------
+   There is no free, CORS-accessible source of real article summaries (Jina
+   Reader now needs a key; HN only carries text for self-posts). So instead of
+   repeating one generic line, the blurb is composed from signals we DO have:
+   the kind of source, the engagement shape, and the story's own text when it
+   has any. Varied, honest, and enough to decide whether to open it.
+------------------------------------------------------------------------- */
 const NEWS_KINDS = [
   { k: "Model release", c: "acc",
-    re: /\b(release[ds]?|launch(es|ed)?|announc\w*|introduc\w*|unveil\w*|now available|ships?|GPT-?\d|Claude \d|Gemini \d|Llama ?\d|v\d+(\.\d+)?)\b/i,
-    note: "A new model or version. Worth knowing the name and roughly what it beats." },
+    re: /\b(release[ds]?|launch(es|ed)?|announc\w*|introduc\w*|unveil\w*|now available|ships?|GPT-?\d|Claude \d|Gemini \d|Llama ?\d)\b/i },
   { k: "Research", c: "pur",
-    re: /\b(paper|arxiv|study|researchers?|we (show|find|present)|benchmark|SOTA|state.of.the.art|novel|method)\b/i,
-    note: "A result or technique. Read the abstract only unless it is directly on your path." },
+    re: /\b(paper|arxiv|study|researchers?|benchmark|SOTA|state.of.the.art|novel method)\b/i },
   { k: "Tooling", c: "blu",
-    re: /\b(show hn|open.?source|library|framework|SDK|API|tool|CLI|repo|github|built|I made|launch hn)\b/i,
-    note: "Something you could actually use this week. The highest-value category for you." },
-  { k: "Safety / policy", c: "red",
-    re: /\b(safety|alignment|regulat\w*|policy|ban|lawsuit|copyright|privacy|ethic\w*|risk|harm|EU|act)\b/i,
-    note: "Context, not craft. Useful for interview small talk, not for building." },
+    re: /\b(show hn|open.?source|library|framework|SDK|API|CLI|repo|github|I built|I made)\b/i },
+  { k: "Safety", c: "red",
+    re: /\b(safety|alignment|regulat\w*|policy|ban|lawsuit|copyright|privacy|ethic\w*|harm)\b/i },
   { k: "Industry", c: "pnk",
-    re: /\b(raise[sd]?|funding|valuation|acquir\w*|layoff|hiring|revenue|IPO|billion|million|CEO|leaves|joins)\b/i,
-    note: "Business news. Skim only \u2014 rarely changes what you should build." },
-  { k: "Opinion", c: "", re: /.*/,
-    note: "Someone\u2019s take. Read the comments rather than the article if you read it at all." }
+    re: /\b(raise[sd]?|funding|valuation|acquir\w*|layoff|hiring|revenue|IPO|billion|CEO|leaves|joins)\b/i },
+  { k: "Discussion", c: "", re: /.*/ }
 ];
-function classifyNews(title) {
-  return NEWS_KINDS.find(x => x.re.test(title)) || NEWS_KINDS[NEWS_KINDS.length - 1];
-}
+function classifyNews(t) { return NEWS_KINDS.find(x => x.re.test(t)) || NEWS_KINDS[5]; }
+
 function domainOf(u) {
   try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return "news.ycombinator.com"; }
+}
+
+const SRC_NOTE = [
+  [/arxiv\.org/i,            "A preprint — not peer reviewed. Read the abstract and figures; skip the rest unless it is on your path."],
+  [/github\.com/i,           "Source code you can actually read and run, which makes it far more useful than a writeup."],
+  [/(openai|anthropic|deepmind|google|meta|mistral|cerebras|nvidia|cohere|databricks)\./i,
+                             "A vendor post, so expect the benchmark that flatters them. Useful for what shipped, not for how good it is."],
+  [/(techcrunch|theverge|wired|reuters|nytimes|wsj|ft\.com|bloomberg|guardian|walrus|businessinsider)\./i,
+                             "Press coverage. Fine for context, but thin on technical detail — do not learn the mechanism from here."],
+  [/(substack|medium|blog\.|\.dev|hey\.com|simonwillison)/i,
+                             "One person's analysis. Often the clearest explanation you will find, but it is a take, not a finding."],
+  [/news\.ycombinator/i,     "A discussion thread — the comments are the content here."]
+];
+function sourceNote(dom) {
+  const m = SRC_NOTE.find(x => x[0].test(dom));
+  return m ? m[1] : "";
+}
+
+function newsBlurb(h) {
+  const bits = [];
+  // the story's own text, when it is a self-post
+  if (h.txt) {
+    const clean = h.txt.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'")
+                       .replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+    if (clean.length > 40) bits.push(clean.slice(0, 220) + (clean.length > 220 ? "…" : ""));
+  }
+  if (!bits.length) {
+    const sn = sourceNote(domainOf(h.u));
+    if (sn) bits.push(sn);
+  }
+  // engagement shape says something real about the story
+  const ratio = h.c / Math.max(h.p, 1);
+  if (ratio > 0.9)      bits.push("More comments than upvotes — this one is contested, so the argument is the substance.");
+  else if (h.p > 600)   bits.push("Unusually high engagement even for a busy week.");
+  else if (ratio < 0.2 && h.c > 5) bits.push("Broadly agreed on rather than argued over.");
+
+  const days = Math.max(0, Math.round((Date.now() / 1000 - (h.at || 0)) / 86400));
+  bits.push(days <= 0 ? "Posted today." : days === 1 ? "Posted yesterday." : `Posted ${days} days ago.`);
+  return bits.join(" ");
 }
 
 function renderNews(hits) {
@@ -259,18 +297,15 @@ function renderNews(hits) {
   box.innerHTML = hits.map(h => {
     const kind = classifyNews(h.t);
     return `
-    <div class="news">
+    <a class="news" href="https://news.ycombinator.com/item?id=${esc(h.id)}"
+       target="_blank" rel="noopener">
       <div class="news-hd">
         <span class="chip ${kind.c}">${esc(kind.k)}</span>
         <span class="news-src">${esc(domainOf(h.u))}</span>
-        <span class="news-p">${h.p} pts \u00b7 ${h.c || 0} comments</span>
       </div>
       <div class="news-t">${esc(h.t)}</div>
-      <div class="news-why">${esc(kind.note)}</div>
-      <a class="news-lnk" href="${esc(h.u)}" target="_blank" rel="noopener">read \u2197</a>
-      <a class="news-lnk" href="https://news.ycombinator.com/item?id=${esc(h.id)}"
-         target="_blank" rel="noopener">discussion \u2197</a>
-    </div>`;
+      <div class="news-why">${esc(newsBlurb(h))}</div>
+    </a>`;
   }).join("");
 }
 
