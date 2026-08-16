@@ -1,5 +1,9 @@
 # AI Co-op 90
 
+**Live:** https://saivikram0812.github.io/AI-90-Prep-/
+**Repo:** `saivikram0812/AI-90-Prep-` (note the trailing hyphen — quote it in shell commands)
+
+
 A self-designed 90-day AI/ML curriculum with progress tracking, built to go from *comfortable
 with Python, new to ML* → *interview-ready for an AI/ML co-op*.
 
