@@ -63,6 +63,9 @@ let S = load();
 function blank() {
   return { startDate: todayISO(), done: {}, notes: {}, conf: {},
            projects: {}, iv: {}, dsa: {}, redo: {},
+           lab: {},    // AI Lab tools tried
+           srs: {},    // spaced-repetition schedule
+           apps: [],   // application tracker
            t: {},   // per-key mutation timestamps — see sync.js for why
            v: 2 };
 }
@@ -158,7 +161,8 @@ function toast(msg) {
 }
 
 /* ---------------- routing ---------------- */
-const ROUTES = ["dash", "day", "plan", "notes", "dsa", "projects", "interview", "journey", "settings"];
+const ROUTES = ["dash", "day", "plan", "notes", "dsa", "ailab", "review", "apps",
+                "projects", "interview", "journey", "settings"];
 function go(hash) { location.hash = hash; }
 function route() {
   const h = (location.hash || "#/dash").replace(/^#\/?/, "");
@@ -171,7 +175,8 @@ function route() {
   window.scrollTo(0, 0);
   main.innerHTML = ({
     dash: viewDash, day: () => viewDay(+arg || nextUp()), plan: viewPlan,
-    notes: viewNotes, dsa: viewDSA, projects: viewProjects, interview: viewInterview,
+    notes: viewNotes, dsa: viewDSA, ailab: viewAilab, review: viewReview, apps: viewApps,
+    projects: viewProjects, interview: viewInterview,
     journey: viewJourney, settings: viewSettings
   })[v]();
   renderSide();
@@ -203,6 +208,14 @@ function renderSide() {
   renderSyncPill();
   document.querySelector('[data-v="plan"] .badge').textContent = `${done}/90`;
   document.querySelector('[data-v="dsa"] .badge').textContent = `${dsaSolvedCount()}/${DSA.length}`;
+  const st = srsStats();
+  const rb = document.querySelector('[data-v="review"] .badge');
+  rb.textContent = st.due ? `${st.due} due` : "—";
+  rb.style.background = st.due ? "rgba(255,157,61,.2)" : "";
+  rb.style.color = st.due ? "var(--acc-2)" : "";
+  document.querySelector('[data-v="ailab"] .badge').textContent =
+    `${Object.keys(S.lab).length}/${(window.AILAB || []).length}`;
+  document.querySelector('[data-v="apps"] .badge').textContent = `${(S.apps || []).length}`;
   const ivTotal = INTERVIEW.reduce((a, c) => a + c.qs.length, 0);
   document.querySelector('[data-v="interview"] .badge').textContent =
     `${Object.keys(S.iv).length}/${ivTotal}`;
@@ -974,6 +987,85 @@ function wire(view) {
       else { mut("redo", s, 1); toast("Flagged for week-13 revision"); }
       route();
     }));
+
+  if (view === "ailab") {
+    loadNews();
+    const rb = document.getElementById("newsrefresh");
+    if (rb) rb.addEventListener("click", () => {
+      try { sessionStorage.removeItem("aicoop90.news"); } catch (e) {}
+      loadNews();
+    });
+    document.querySelectorAll("[data-labtick]").forEach(b =>
+      b.addEventListener("click", () => {
+        const d = b.dataset.labtick;
+        if (S.lab[d]) delete S.lab[d]; else S.lab[d] = new Date().toISOString();
+        save(); route();
+      }));
+    const q = document.getElementById("lq");
+    let t;
+    q.addEventListener("input", () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        labF.q = q.value;
+        document.getElementById("main").innerHTML = viewAilab(); wire("ailab");
+        const nq = document.getElementById("lq");
+        nq.focus(); nq.setSelectionRange(nq.value.length, nq.value.length);
+      }, 220);
+    });
+    document.getElementById("lcat").addEventListener("change", e => { labF.cat = e.target.value; route(); });
+    document.getElementById("lstatus").addEventListener("change", e => { labF.status = e.target.value; route(); });
+  }
+
+  if (view === "review") {
+    const sh = document.getElementById("revshow");
+    if (sh) sh.addEventListener("click", () => { revShown = true; route(); });
+    document.querySelectorAll("[data-grade]").forEach(b =>
+      b.addEventListener("click", () => {
+        srsGrade(revCard.id, +b.dataset.grade);
+        revCard = null; revShown = false;
+        route();
+      }));
+  }
+
+  if (view === "apps") {
+    const add = document.getElementById("aadd");
+    if (add) add.addEventListener("click", () => {
+      const co = document.getElementById("ac").value.trim();
+      if (!co) { toast("Company name is required"); return; }
+      S.apps.push({
+        id: "a" + Date.now().toString(36),
+        co,
+        role: document.getElementById("ar").value.trim(),
+        type: document.getElementById("at").value,
+        src: document.getElementById("as").value,
+        url: document.getElementById("au").value.trim(),
+        date: todayISO(),
+        status: "applied",
+        peak: "applied"
+      });
+      save(); route(); toast("Added — good. Keep the volume up.");
+    });
+    document.querySelectorAll("[data-astatus]").forEach(sel =>
+      sel.addEventListener("change", () => {
+        const a = S.apps.find(x => x.id === sel.dataset.astatus);
+        if (!a) return;
+        a.status = sel.value;
+        // remember the furthest stage reached, so the funnel stays honest after a rejection
+        if (APP_STAGES.includes(sel.value) &&
+            APP_STAGES.indexOf(sel.value) > APP_STAGES.indexOf(a.peak || "applied")) {
+          a.peak = sel.value;
+        }
+        save(); route();
+        if (sel.value === "offer") toast("Offer. Well done.");
+      }));
+    document.querySelectorAll("[data-adel]").forEach(b =>
+      b.addEventListener("click", () => {
+        const a = S.apps.find(x => x.id === b.dataset.adel);
+        if (!a || !confirm(`Delete the ${a.co} application?`)) return;
+        S.apps = S.apps.filter(x => x.id !== b.dataset.adel);
+        save(); route();
+      }));
+  }
 
   if (view === "dsa") {
     const q = document.getElementById("dq");
