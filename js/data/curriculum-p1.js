@@ -35,8 +35,8 @@ window.CURRICULUM_P1 = [
     warn: "NEVER let test data influence any decision. Not scaling, not feature selection, not 'just peeking'. That is leakage and it silently inflates every number you report."
   },
   vids: [
-    { t: "A gentle introduction to machine learning", ch: "StatQuest" },
-    { t: "But what is a neural network", ch: "3Blue1Brown" }
+    { t: "A gentle introduction to machine learning", ch: "StatQuest", u: "Gv9_4yMHFhI" },
+    { t: "But what is a neural network", ch: "3Blue1Brown", u: "aircAruvnKk" }
   ],
   lab: {
     t: "Set up your 90-day repo",
@@ -88,9 +88,8 @@ window.CURRICULUM_P1 = [
     warn: "* is NOT matrix multiply. (n,1) and (1,n) broadcast into (n,n) — a classic silent bug that eats your RAM and your afternoon."
   },
   vids: [
-    { t: "NumPy broadcasting explained", ch: "Keith Galli" },
-    { t: "NumPy full course for beginners", ch: "freeCodeCamp",
-      n: "1h course · watch only up to broadcasting (~first 30 min), then stop" }
+    { t: "Complete NumPy tutorial: arrays, indexing, math, reshaping", ch: "Keith Galli", u: "GB9ByFAIAH4",
+      n: "58 min · watch to ~30 min (through indexing + math), then stop" }
   ],
   lab: {
     t: "Vectorise everything",
@@ -140,8 +139,8 @@ window.CURRICULUM_P1 = [
     warn: "SettingWithCopyWarning is not noise. It means you may be writing to a temporary view and your change may vanish. Fix it with .loc or an explicit .copy()."
   },
   vids: [
-    { t: "Pandas tutorial loc iloc selecting rows and columns", ch: "Corey Schafer" },
-    { t: "Pandas handling missing data dropna fillna", ch: "Corey Schafer" }
+    { t: "Pandas part 3: indexes — set, reset, and use (loc vs iloc)", ch: "Corey Schafer", u: "W9XjRYFkkyw" },
+    { t: "Pandas part 9: cleaning data — datatypes and missing values", ch: "Corey Schafer", u: "KdmPHEnPJPs" }
   ],
   lab: {
     t: "Clean a genuinely messy dataset",
@@ -191,7 +190,7 @@ window.CURRICULUM_P1 = [
     warn: "Duplicate join keys silently explode your rows. Pass validate='one_to_many' to pandas and let it scream instead of you debugging metrics at midnight."
   },
   vids: [
-    { t: "Pandas groupby explained", ch: "Corey Schafer" },
+    { t: "Pandas part 8: grouping and aggregating", ch: "Corey Schafer", u: "txMdrV1Ut64" },
     { t: "Pandas merge join concat tutorial", ch: "Data School" }
   ],
   lab: {
@@ -243,7 +242,7 @@ window.CURRICULUM_P1 = [
     warn: "Correlation ~0.97 with the target is a red flag, not a win. Ask if that feature exists at prediction time."
   },
   vids: [
-    { t: "Exploratory data analysis with python", ch: "Rob Mulla" },
+    { t: "Exploratory data analysis with pandas python", ch: "Rob Mulla", u: "xi0vhXFPegw" },
     { t: "Matplotlib and Seaborn tutorial", ch: "Corey Schafer" }
   ],
   lab: {

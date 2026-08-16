@@ -141,9 +141,12 @@ function esc(s) {
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
+/* If a video has a verified id (v.u), link straight to it. Otherwise fall back to a
+   YouTube search for the exact title + channel — never a dead link, but one extra click. */
 function ytURL(v) {
-  return "https://www.youtube.com/results?search_query=" +
-    encodeURIComponent(`${v.ch} ${v.t}`);
+  return v.u ? "https://www.youtube.com/watch?v=" + v.u
+             : "https://www.youtube.com/results?search_query=" +
+               encodeURIComponent(`${v.ch} ${v.t}`);
 }
 let toastT;
 function toast(msg) {
@@ -361,12 +364,12 @@ function viewDay(n) {
     ${d.vids.map(v => `
       <a class="vid ${v.n ? "long" : ""}" href="${ytURL(v)}" target="_blank" rel="noopener">
         <div class="play">▶</div>
-        <div><div class="tt">${esc(v.t)}</div>
+        <div><div class="tt">${esc(v.t)}${v.u ? `<span class="chip grn" style="margin-left:7px">direct</span>` : ""}</div>
           <div class="ch">${esc(v.ch)} · ${v.n ? esc(v.n) : "short video"}</div></div>
       </a>`).join("")}
     <p style="font-size:11.5px;color:var(--txt-3);margin-top:9px">
-      Links open a YouTube search for that exact title and channel, so they never rot.
-      Pick the top result from the named channel.</p>
+      A <b>direct</b> tag means the link opens that exact video. Untagged links open a YouTube
+      search for the title and channel — one extra click, but it can never become a dead link.</p>
   </div>
 
   <div class="sec">
