@@ -219,7 +219,8 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .note-eq{
   font-family:var(--mono);font-size:12.5px;background:rgba(30,58,95,.09);
   border:1.5px dashed rgba(30,58,95,.32);border-radius:5px;padding:9px 12px;
-  margin:14px 0 0 14px;color:var(--ink);line-height:1.7;overflow-x:auto;white-space:pre-wrap;
+  margin:14px 0 0 14px;color:var(--ink);line-height:1.7;overflow-x:auto;
+  white-space:pre-wrap;overflow-wrap:anywhere;
 }
 .note-warn{
   font-family:var(--hand2);font-size:16.5px;line-height:25px;color:var(--ink-2);
@@ -576,12 +577,16 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 }
 .ls-ex pre{
   font-family:var(--mono);font-size:12.4px;line-height:1.72;color:var(--ink);
-  padding:2px 18px 16px;margin:0;overflow-x:auto;white-space:pre;
+  padding:2px 18px 16px;margin:0;overflow-x:auto;
+  /* pre-wrap keeps the intentional line breaks and indentation, but wraps a
+     line that is too long instead of hiding it off-screen. */
+  white-space:pre-wrap;overflow-wrap:anywhere;
 }
 .ls-code{
   font-family:var(--mono);font-size:12.6px;line-height:1.75;color:var(--txt);
   background:var(--bg-3);border:1px solid var(--line-2);border-radius:9px;
-  padding:14px 16px;margin:14px 0;overflow-x:auto;white-space:pre;
+  padding:14px 16px;margin:14px 0;overflow-x:auto;
+  white-space:pre-wrap;overflow-wrap:anywhere;
 }
 .ls-key{
   font-family:var(--hand2);font-size:17px;line-height:1.5;color:var(--grn);
@@ -596,7 +601,9 @@ input,select,textarea{font-family:inherit;font-size:inherit}
   .lesson{padding:18px 16px}
   .ls h5{font-size:22px}
   .ls p{font-size:14.2px}
-  .ls-ex pre,.ls-code{font-size:11.2px}
+  .ls-ex pre{font-size:10.2px;padding:2px 12px 14px;line-height:1.6}
+  .ls-ex-t{padding:8px 12px 3px;font-size:18px}
+  .ls-code{font-size:10.4px;padding:11px 12px}
 }
 @media print{
   .lesson{border:1px solid #ccc;background:#fff}
