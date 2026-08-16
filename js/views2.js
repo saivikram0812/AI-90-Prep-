@@ -281,32 +281,54 @@ function sourceNote(dom) {
   return m ? m[1] : "";
 }
 
-function newsBlurb(h) {
+/* Fallback line when we cannot get a real description for a story. */
+function newsFallback(h) {
   const bits = [];
-  // the story's own text, when it is a self-post
-  if (h.txt) {
-    const clean = h.txt.replace(/<[^>]+>/g, " ")
-                       .replace(/&#x2F;/g, "/").replace(/&#x27;/g, "'")
-                       .replace(/&quot;/g, '"').replace(/&amp;/g, "&")
-                       .replace(/\s+/g, " ").trim();
-    // Self-post text is often just a bare archive link. Strip URLs and only use
-    // it if there is real prose left underneath.
-    const prose = clean.replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
-    if (prose.length >= 60) bits.push(prose.slice(0, 210) + (prose.length > 210 ? "…" : ""));
-  }
-  if (!bits.length) {
-    const sn = sourceNote(domainOf(h.u));
-    if (sn) bits.push(sn);
-  }
-  // engagement shape says something real about the story
+  const sn = sourceNote(domainOf(h.u));
+  if (sn) bits.push(sn);
   const ratio = h.c / Math.max(h.p, 1);
-  if (ratio > 0.9)      bits.push("More comments than upvotes — this one is contested, so the argument is the substance.");
-  else if (h.p > 600)   bits.push("Unusually high engagement even for a busy week.");
-  else if (ratio < 0.2 && h.c > 5) bits.push("Broadly agreed on rather than argued over.");
+  if (ratio > 0.9) bits.push("More comments than upvotes — this one is contested.");
+  return bits.join(" ") || "No description available for this one.";
+}
 
-  const days = Math.max(0, Math.round((Date.now() / 1000 - (h.at || 0)) / 86400));
-  bits.push(days <= 0 ? "Posted today." : days === 1 ? "Posted yesterday." : `Posted ${days} days ago.`);
-  return bits.join(" ");
+/* Real per-article descriptions.
+   Microlink reads the page's og:description — i.e. the summary the publisher
+   wrote — and is free and CORS-enabled. Cached in localStorage for a week
+   because a description never changes, which also keeps us well inside the
+   free tier. Fetched progressively so the widget renders instantly. */
+const DESC_KEY = "aicoop90.desc.";
+function cachedDesc(id) {
+  try {
+    const raw = localStorage.getItem(DESC_KEY + id);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (Date.now() - o.at > 7 * 864e5) return null;
+    return o.d;
+  } catch (e) { return null; }
+}
+async function fetchDesc(h) {
+  const hit = cachedDesc(h.id);
+  if (hit !== null) return hit;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 9000);
+    const r = await fetch("https://api.microlink.io/?url=" + encodeURIComponent(h.u),
+                          { signal: ctl.signal });
+    clearTimeout(timer);
+    const j = await r.json();
+    let d = (j && j.data && j.data.description) ? String(j.data.description).trim() : "";
+    d = d.replace(/\s+/g, " ");
+    if (d.length > 320) d = d.slice(0, 320).replace(/\s\S*$/, "") + "…";
+    try { localStorage.setItem(DESC_KEY + h.id, JSON.stringify({ at: Date.now(), d })); } catch (e) {}
+    return d;
+  } catch (e) { return ""; }
+}
+async function hydrateDescriptions(hits) {
+  await Promise.all(hits.map(async h => {
+    const d = await fetchDesc(h);
+    const el = document.querySelector(`[data-desc="${h.id}"]`);
+    if (el) el.textContent = d || newsFallback(h);
+  }));
 }
 
 function renderNews(hits) {
@@ -315,17 +337,21 @@ function renderNews(hits) {
   if (!hits.length) { box.textContent = "Nothing notable in the last week."; return; }
   box.innerHTML = hits.map(h => {
     const kind = classifyNews(h.t, domainOf(h.u));
+    const days = Math.max(0, Math.round((Date.now() / 1000 - (h.at || 0)) / 86400));
+    const cached = cachedDesc(h.id);
     return `
-    <a class="news" href="https://news.ycombinator.com/item?id=${esc(h.id)}"
-       target="_blank" rel="noopener">
+    <div class="news">
       <div class="news-hd">
         <span class="chip ${kind.c}">${esc(kind.k)}</span>
         <span class="news-src">${esc(domainOf(h.u))}</span>
       </div>
       <div class="news-t">${esc(h.t)}</div>
-      <div class="news-why">${esc(newsBlurb(h))}</div>
-    </a>`;
+      <div class="news-why" data-desc="${esc(h.id)}">${cached ? esc(cached) : "…"}</div>
+      <div class="news-foot">${h.p} points · ${h.c} comments · ${
+        days <= 0 ? "today" : days === 1 ? "yesterday" : days + " days ago"}</div>
+    </div>`;
   }).join("");
+  hydrateDescriptions(hits);
 }
 
 /* ------------------------------------------------ REVIEW ------ */

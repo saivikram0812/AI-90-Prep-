@@ -708,17 +708,15 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 
 /* ---------- news widget ---------- */
 .news{
-  display:block;text-decoration:none;color:inherit;
   padding:14px 16px;border-radius:11px;background:var(--bg-3);
-  border:1px solid transparent;transition:.14s;
+  border:1px solid var(--line);
 }
 .news + .news{margin-top:8px}
-.news:hover{border-color:var(--line-2);text-decoration:none;transform:translateX(2px)}
 .news-hd{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
 .news-src{font-size:11px;color:var(--txt-3);font-family:var(--mono)}
-.news-t{font-size:15px;font-weight:650;color:var(--txt);line-height:1.4;margin-bottom:6px}
-.news:hover .news-t{color:var(--acc-2)}
-.news-why{font-size:13px;color:var(--txt-3);line-height:1.65}
+.news-t{font-size:15px;font-weight:650;color:var(--txt);line-height:1.4;margin-bottom:7px}
+.news-why{font-size:13.3px;color:var(--txt-2);line-height:1.68}
+.news-foot{font-size:11px;color:var(--txt-3);margin-top:8px;font-variant-numeric:tabular-nums}
 
 /* ---------- weekly build ---------- */
 .wkb{
